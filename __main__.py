@@ -1,5 +1,8 @@
 import pulumi
 import pulumi_gcp as gcp
+from pulumi_kubernetes import core_v1 as corev1
+from pulumi_kubernetes import apps_v1 as apps
+
 
 # Cluster configuration variables
 project_id = "your-gcp-project-id"  # Google Cloud project ID
@@ -34,10 +37,10 @@ gpu_node_pool = gcp.container.NodePool(node_pool_name,
             "https://www.googleapis.com/auth/logging.write",
             "https://www.googleapis.com/auth/monitoring",
         ],
-        guest_accelerator=gcp.container.NodePoolNodeConfigGuestAcceleratorArgs(
+        guest_accelerators=[gcp.container.NodePoolNodeConfigGuestAcceleratorArgs(
             type=gpu_type,
             count=gpu_count_per_node
-        ),
+        )],
         metadata={"disable-legacy-endpoints": "true"},
         labels={"llm-node": "true"},
         taints=[
@@ -59,8 +62,57 @@ gpu_node_pool = gcp.container.NodePool(node_pool_name,
     project=project_id,
 )
 
+
+llm_namespace = corev1.Namespace("vllm")
+
+# Create a deployment that requests GPU resources
+gpu_deployment = apps.Deployment("vllm-deployment",
+    metadata=apps.DeploymentMetadataArgs(
+        namespace=llm_namespace.metadata["name"],  # Deploying into the created namespace
+    ),
+    spec=apps.DeploymentSpecArgs(
+        replicas=1,
+        selector=apps.DeploymentSpecSelectorArgs(
+            match_labels={
+                "app": "llm-gpu",
+            },
+        ),
+        template=corev1.PodTemplateSpecArgs(
+            metadata=corev1.ObjectMetaArgs(
+                labels={
+                    "app": "llm-gpu",
+                },
+            ),
+            spec=corev1.PodSpecArgs(
+                containers=[
+                    corev1.ContainerArgs(
+                        name="llm-container",
+                        image="nvidia/cuda:10.0-base",  # Using the CUDA image as an example
+                        resources=corev1.ResourceRequirementsArgs(
+                            requests={
+                                "nvidia.com/gpu": 1,  # Requesting one GPU
+                            },
+                        ),
+                    ),
+                ],
+                node_selector={
+                    "cloud.google.com/gke-accelerator": gpu_type,  # Ensuring the pod is scheduled on GPU-enabled nodes
+                },
+                tolerations=[  # Toleartions ensure the pod can be scheduled on nodes with taints that match these.
+                    corev1.TolerationArgs(
+                        key="nvidia.com/gpu",
+                        operator="Exists",
+                        effect="NoSchedule",
+                    ),
+                ],
+            ),
+        ),
+    ),
+)
+
 # Export the cluster name and Kubeconfig file for accessing the cluster
 pulumi.export('cluster_name', cluster.name)
+pulumi.export("llm_namespace", llm_namespace.metadata["name"])
 kubeconfig = pulumi.Output.all(cluster.name, cluster.endpoint, cluster.master_auth).apply(lambda args: '''
 apiVersion: v1
 clusters:
