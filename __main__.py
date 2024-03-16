@@ -75,7 +75,7 @@ gpu_deployment = k8s.apps.v1.Deployment(deploy_name,
     ),
     spec=k8s.apps.v1.DeploymentSpecArgs(
         replicas=1,
-        selector=k8s.apps.v1.DeploymentSpecSelectorArgs(
+        selector=k8s.meta.v1.LabelSelectorArgs(
             match_labels={
                 "app": deploy_name,
             },
