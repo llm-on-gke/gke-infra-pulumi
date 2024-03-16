@@ -6,7 +6,7 @@ import pulumi_kubernetes as k8s
 
 # Cluster configuration variables
 project_id = "your-gcp-project-id"  # Google Cloud project ID
-location = "us-centra11"  # Google Cloud zone
+location = "us-centra11-a"  # Google Cloud zone
 cluster_name = "llm-gpu-cluster"
 kubernetes_version = "1.28"  # specify the desired Kubernetes version
 node_pool_name = "gpu-node-pool"
@@ -63,6 +63,15 @@ gpu_node_pool = gcp.container.NodePool(node_pool_name,
     project=project_id,
 )
 
+k8s_provider = k8s.Provider("k8s-provider", kubeconfig=cluster.endpoint.apply(
+    lambda endpoint: cluster.master_auth.apply(
+        lambda auth: gcp.container.get_cluster_kubeconfig(
+            name=cluster.name,
+            location=cluster.location,
+            endpoint=endpoint,
+            master_auth=auth,
+            project=cluster.project))
+))
 
 llm_namespace = k8s.core.v1.Namespace("vllm")
 deploy_name="llm-gke-inference"
@@ -112,6 +121,7 @@ gpu_deployment = k8s.apps.v1.Deployment(deploy_name,
             ),
         ),
     ),
+    opts=ResourceOptions(provider=k8s_provider)
 )
 
 # Export the cluster name and Kubeconfig file for accessing the cluster
