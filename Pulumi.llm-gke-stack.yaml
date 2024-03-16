@@ -1,0 +1,2 @@
+config:
+  gcp:project: rick-vertex-ai
