@@ -81,7 +81,7 @@ gpu_deployment = k8s.apps.v1.Deployment(deploy_name,
             },
         ),
         template=k8s.core.v1.PodTemplateSpecArgs(
-            metadata=k8s.core.v1.ObjectMetaArgs(
+            metadata=k8s.meta.v1.ObjectMetaArgs(
                 labels={
                     "app": deploy_name,
                 },
