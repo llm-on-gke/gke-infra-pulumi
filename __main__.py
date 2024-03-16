@@ -63,7 +63,7 @@ gpu_node_pool = gcp.container.NodePool(node_pool_name,
 )
 
 
-llm_namespace = Namespace("vllm")
+llm_namespace = core.Namespace("vllm")
 
 # Create a deployment that requests GPU resources
 gpu_deployment = apps.Deployment("vllm-deployment",
