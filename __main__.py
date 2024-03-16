@@ -20,7 +20,8 @@ cluster = gcp.container.Cluster(cluster_name,
     initial_node_count=1,  # one node in default node pool (can be changed or default pool can be removed if needed)
     min_master_version=kubernetes_version,
     location=location,
-    project=project_id
+    project=project_id,
+    deletionProtection=False
 )
 
 # Create a GKE node pool with GPUs
