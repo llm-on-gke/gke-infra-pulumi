@@ -64,23 +64,26 @@ gpu_node_pool = gcp.container.NodePool(node_pool_name,
 
 
 llm_namespace = k8s.core.v1.Namespace("vllm")
-
+deploy_name="llm-gke-inference"
 # Create a deployment that requests GPU resources
-gpu_deployment = k8s.apps.v1.Deployment("vllm-deployment",
-    metadata=k8s.apps.v1.DeploymentMetadataArgs(
-        namespace=llm_namespace.metadata["name"],  # Deploying into the created namespace
+gpu_deployment = k8s.apps.v1.Deployment(deploy_name,
+     metadata=k8s.meta.v1.ObjectMetaArgs(
+        labels={
+            "app": deploy_name,
+        },
+        name=deploy_name,
     ),
     spec=k8s.apps.v1.DeploymentSpecArgs(
         replicas=1,
         selector=k8s.apps.v1.DeploymentSpecSelectorArgs(
             match_labels={
-                "app": "llm-gpu",
+                "app": deploy_name,
             },
         ),
         template=k8s.core.v1.PodTemplateSpecArgs(
             metadata=k8s.core.v1.ObjectMetaArgs(
                 labels={
-                    "app": "llm-gpu",
+                    "app": deploy_name,
                 },
             ),
             spec=k8s.core.v1.PodSpecArgs(
