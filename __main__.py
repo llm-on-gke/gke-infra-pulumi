@@ -1,12 +1,12 @@
 import pulumi
 import pulumi_gcp as gcp
 #from pulumi_kubernetes.core.v1 import TolerationArgs,ResourceRequirementsArgs,Namespace,ObjectMetaArgs, ContainerArgs, PodSpecArgs, PodTemplateSpecArgs, Service, ServicePortArgs, ServiceSpecArgs
-import pulumi_kubernetes.apps.v1 as apps
-import pulumi_kubernetes.core.v1 as core
+import pulumi_kubernetes as k8s
+#import pulumi_kubernetes.core.v1 as core
 
 # Cluster configuration variables
 project_id = "your-gcp-project-id"  # Google Cloud project ID
-zone = "us-central-1c"  # Google Cloud zone
+location = "us-centra11"  # Google Cloud zone
 cluster_name = "llm-gpu-cluster"
 kubernetes_version = "1.28"  # specify the desired Kubernetes version
 node_pool_name = "gpu-node-pool"
@@ -19,7 +19,7 @@ UseSpot=True
 cluster = gcp.container.Cluster(cluster_name,
     initial_node_count=1,  # one node in default node pool (can be changed or default pool can be removed if needed)
     min_master_version=kubernetes_version,
-    location=zone,
+    location=location,
     project=project_id
 )
 
@@ -63,32 +63,32 @@ gpu_node_pool = gcp.container.NodePool(node_pool_name,
 )
 
 
-llm_namespace = core.Namespace("vllm")
+llm_namespace = k8s.core.v1.Namespace("vllm")
 
 # Create a deployment that requests GPU resources
-gpu_deployment = apps.Deployment("vllm-deployment",
-    metadata=apps.DeploymentMetadataArgs(
+gpu_deployment = k8s.apps.v1.Deployment("vllm-deployment",
+    metadata=k8s.apps.v1.DeploymentMetadataArgs(
         namespace=llm_namespace.metadata["name"],  # Deploying into the created namespace
     ),
-    spec=apps.DeploymentSpecArgs(
+    spec=k8s.apps.v1.DeploymentSpecArgs(
         replicas=1,
-        selector=apps.DeploymentSpecSelectorArgs(
+        selector=k8s.apps.v1.DeploymentSpecSelectorArgs(
             match_labels={
                 "app": "llm-gpu",
             },
         ),
-        template=core.PodTemplateSpecArgs(
-            metadata=core.ObjectMetaArgs(
+        template=k8s.core.v1.PodTemplateSpecArgs(
+            metadata=k8s.core.v1.ObjectMetaArgs(
                 labels={
                     "app": "llm-gpu",
                 },
             ),
-            spec=core.PodSpecArgs(
+            spec=k8s.core.v1.PodSpecArgs(
                 containers=[
-                    core.ContainerArgs(
+                    k8s.core.v1.ContainerArgs(
                         name="llm-container",
                         image="nvidia/cuda:10.0-base",  # Using the CUDA image as an example
-                        resources=core.ResourceRequirementsArgs(
+                        resources=k8s.core.v1.ResourceRequirementsArgs(
                             requests={
                                 "nvidia.com/gpu": 1,  # Requesting one GPU
                             },
@@ -99,7 +99,7 @@ gpu_deployment = apps.Deployment("vllm-deployment",
                     "cloud.google.com/gke-accelerator": gpu_type,  # Ensuring the pod is scheduled on GPU-enabled nodes
                 },
                 tolerations=[  # Toleartions ensure the pod can be scheduled on nodes with taints that match these.
-                    core.TolerationArgs(
+                    k8s.core.v1.TolerationArgs(
                         key="nvidia.com/gpu",
                         operator="Exists",
                         effect="NoSchedule",
