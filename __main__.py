@@ -21,7 +21,7 @@ cluster = gcp.container.Cluster(cluster_name,
     min_master_version=kubernetes_version,
     location=location,
     project=project_id,
-    deletionProtection=False
+    deletion_protection=False
 )
 
 # Create a GKE node pool with GPUs
