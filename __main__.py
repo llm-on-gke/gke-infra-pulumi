@@ -1,9 +1,8 @@
 import pulumi
 import pulumi_gcp as gcp
-from pulumi_kubernetes.apps.v1 import Deployment, DeploymentSpecArgs, DeploymentMetadataArgs,DeploymentSpecSelectorArgs
-from pulumi_kubernetes.core.v1 import TolerationArgs,ResourceRequirementsArgs,Namespace,ObjectMetaArgs, ContainerArgs, PodSpecArgs, PodTemplateSpecArgs, Service, ServicePortArgs, ServiceSpecArgs
-
-
+#from pulumi_kubernetes.core.v1 import TolerationArgs,ResourceRequirementsArgs,Namespace,ObjectMetaArgs, ContainerArgs, PodSpecArgs, PodTemplateSpecArgs, Service, ServicePortArgs, ServiceSpecArgs
+import pulumi_kubernete.apps.v1 as apps
+import pulumi_kubernete.core.v1 as core
 
 # Cluster configuration variables
 project_id = "your-gcp-project-id"  # Google Cloud project ID
@@ -67,29 +66,29 @@ gpu_node_pool = gcp.container.NodePool(node_pool_name,
 llm_namespace = Namespace("vllm")
 
 # Create a deployment that requests GPU resources
-gpu_deployment = Deployment("vllm-deployment",
-    metadata=DeploymentMetadataArgs(
+gpu_deployment = apps.Deployment("vllm-deployment",
+    metadata=apps.DeploymentMetadataArgs(
         namespace=llm_namespace.metadata["name"],  # Deploying into the created namespace
     ),
-    spec=DeploymentSpecArgs(
+    spec=apps.DeploymentSpecArgs(
         replicas=1,
-        selector=DeploymentSpecSelectorArgs(
+        selector=apps.DeploymentSpecSelectorArgs(
             match_labels={
                 "app": "llm-gpu",
             },
         ),
-        template=PodTemplateSpecArgs(
-            metadata=ObjectMetaArgs(
+        template=core.PodTemplateSpecArgs(
+            metadata=core.ObjectMetaArgs(
                 labels={
                     "app": "llm-gpu",
                 },
             ),
-            spec=PodSpecArgs(
+            spec=core.PodSpecArgs(
                 containers=[
-                    ContainerArgs(
+                    core.ContainerArgs(
                         name="llm-container",
                         image="nvidia/cuda:10.0-base",  # Using the CUDA image as an example
-                        resources=ResourceRequirementsArgs(
+                        resources=core.ResourceRequirementsArgs(
                             requests={
                                 "nvidia.com/gpu": 1,  # Requesting one GPU
                             },
@@ -100,7 +99,7 @@ gpu_deployment = Deployment("vllm-deployment",
                     "cloud.google.com/gke-accelerator": gpu_type,  # Ensuring the pod is scheduled on GPU-enabled nodes
                 },
                 tolerations=[  # Toleartions ensure the pod can be scheduled on nodes with taints that match these.
-                    TolerationArgs(
+                    core.TolerationArgs(
                         key="nvidia.com/gpu",
                         operator="Exists",
                         effect="NoSchedule",
