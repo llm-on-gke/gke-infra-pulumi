@@ -1,8 +1,8 @@
 import pulumi
 import pulumi_gcp as gcp
 #from pulumi_kubernetes.core.v1 import TolerationArgs,ResourceRequirementsArgs,Namespace,ObjectMetaArgs, ContainerArgs, PodSpecArgs, PodTemplateSpecArgs, Service, ServicePortArgs, ServiceSpecArgs
-import pulumi_kubernete.apps.v1 as apps
-import pulumi_kubernete.core.v1 as core
+import pulumi_kubernetes.apps.v1 as apps
+import pulumi_kubernetes.core.v1 as core
 
 # Cluster configuration variables
 project_id = "your-gcp-project-id"  # Google Cloud project ID
